@@ -127,7 +127,7 @@ Open http://localhost:8501 in your browser.
 ### 6. Quick CLI test
 
 ```bash
-python agent.py
+python catalyst_agent.py
 ```
 
 ---
