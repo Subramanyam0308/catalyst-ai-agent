@@ -1,130 +1,141 @@
 # ⚡ Catalyst — Skill Assessment & Learning Plan Agent
 
-> An AI-powered, production-ready agent that analyses your resume against a job description, identifies skill gaps, and generates a personalised free-resource learning roadmap.
-
-[![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/)
-[![Streamlit](https://img.shields.io/badge/UI-Streamlit-ff4b4b)](https://streamlit.io/)
-[![Free Tier Only](https://img.shields.io/badge/APIs-Free%20Tier%20Only-34d399)](https://huggingface.co/)
-[![Open Source](https://img.shields.io/badge/models-Open%20Source-f59e0b)](https://huggingface.co/sentence-transformers)
+> Upload your resume and a job description. Get an AI-powered skill gap analysis, match score, and a personalised free learning roadmap — in seconds.
 
 ---
 
-## 🎯 What It Does
+## 📋 Table of Contents
 
-| Input | Output |
-|-------|--------|
-| Resume (plain text) | Overall match score (0–100) |
-| Job Description (plain text) | Per-skill scores with explanations |
-| | Strengths & gap analysis |
-| | Prioritised learning roadmap |
-| | Free curated resources (YouTube, docs, courses) |
-| | Estimated upskilling timeline |
-| | Downloadable JSON report |
-
----
-
-## 🏗️ Architecture
-
-```
-catalyst-project/
-├── catalyst_agent.py            ← Core agent (7 modular tools)
-├── streamlit_app.py    ← UI layer
-├── requirements.txt
-└── README.md
-```
-
-### Agent Pipeline
-
-```
-Resume + JD
-    │
-    ▼
-┌─────────────┐     ┌──────────────────┐
-│ InputParser │────▶│  SkillExtractor  │  Taxonomy + HF LLM
-└─────────────┘     └──────────────────┘
-                           │
-                    ┌──────▼──────────┐
-                    │ EmbeddingEngine │  sentence-transformers (local)
-                    └──────┬──────────┘
-                           │
-                    ┌──────▼──────────┐
-                    │  ScoringEngine  │  Cosine similarity + keyword boost
-                    └──────┬──────────┘
-                           │
-                    ┌──────▼──────────┐
-                    │ RoadmapBuilder  │  Priority-sorted learning items
-                    └──────┬──────────┘
-                           │
-                    ┌──────▼──────────┐
-                    │ExplanationGen.  │  Human-readable summary
-                    └──────┬──────────┘
-                           │
-                    AssessmentResult (JSON + UI)
-```
-
-### Scoring Formula
-
-```
-base_score   = cosine_similarity(skill_embedding, resume_embedding) × 100
-keyword_boost = +15 if exact keyword in resume
-final_score  = min(100, base_score + keyword_boost)
-
-overall_match = Σ(score × weight) / Σ(weight)
-  where weight = 2.0 for core skills, 1.0 for nice-to-haves
-```
-
-### Candidate Level Labels
-| Score Range | Label |
-|-------------|-------|
-| ≥ 65 | Strong ✅ |
-| 35–64 | Partial ⚠️ |
-| < 35 | Missing ❌ |
+- [Overview](#overview)
+- [Features](#features)
+- [Architecture](#architecture)
+- [Tech Stack](#tech-stack)
+- [Installation](#installation)
+- [Configuration](#configuration)
+- [Running the App](#running-the-app)
+- [How It Works](#how-it-works)
+- [Project Structure](#project-structure)
+- [Sample Output](#sample-output)
+- [Notes & Limitations](#notes--limitations)
 
 ---
 
-## 🚀 Setup & Run
+## Overview
 
-### 1. Clone / navigate to project
+**Catalyst** is a fully modular, tool-based AI agent that analyses the gap between a candidate's existing skills (from their resume) and the requirements of a target role (from a job description). It produces:
+
+- An **overall match score** (0–100)
+- A **skill-by-skill breakdown** with candidate level assessment
+- A **prioritised learning roadmap** with curated free resources
+- An **estimated upskilling timeline**
+- A **chat interface** for follow-up questions about your results
+
+Everything runs on **free and open-source tools** — no paid API keys required.
+
+---
+
+## Features
+
+| Feature | Description |
+|---|---|
+| 📄 Resume & JD Input | Paste text directly or upload a PDF / DOCX file |
+| 🧠 Dual Skill Extraction | Taxonomy keyword matching + HuggingFace LLM extraction |
+| 📐 Hybrid Scoring | 4-signal scoring: semantic similarity, keyword match, section boost, frequency |
+| 🗺️ Learning Roadmap | Prioritised gaps with free resources (courses, docs, videos) |
+| ⏱️ Time Estimate | Upskilling timeline at 10 hrs/week |
+| 💬 Chat Interface | Ask follow-up questions about your assessment |
+| 📦 JSON Export | Download your full report as structured JSON |
+| 🆓 100% Free | Uses sentence-transformers locally + HuggingFace free inference tier |
+
+---
+
+## Architecture
+
+Catalyst follows a linear pipeline of 7 independent tools orchestrated by the `CatalystAgent`:
+
+```
+InputParser → SkillExtractor → EmbeddingEngine → ScoringEngine
+                                                        ↓
+              ExplanationGenerator ← RoadmapBuilder ← (scores)
+```
+
+| Tool | Class | Responsibility |
+|---|---|---|
+| 1 | `InputParser` | Cleans and normalises raw resume + JD text |
+| 2 | `SkillExtractor` | Extracts skills via taxonomy keywords + HuggingFace LLM |
+| 3 | `EmbeddingEngine` | Generates semantic embeddings using `all-MiniLM-L6-v2` |
+| 4 | `ScoringEngine` | Hybrid 4-signal scoring of each JD skill against the resume |
+| 5 | `ResourceFinder` | Maps skill gaps to curated free learning resources |
+| 6 | `RoadmapBuilder` | Builds a prioritised learning plan with time estimates |
+| 7 | `ExplanationGenerator` | Produces a human-readable summary report |
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| UI | [Streamlit](https://streamlit.io/) |
+| Local Embeddings | [sentence-transformers](https://www.sbert.net/) (`all-MiniLM-L6-v2`) |
+| LLM Skill Extraction | [HuggingFace Inference API](https://huggingface.co/inference-api) (Mistral-7B-Instruct, free tier) |
+| Similarity | [scikit-learn](https://scikit-learn.org/) cosine similarity |
+| PDF Parsing | [pypdf](https://pypdf.readthedocs.io/) |
+| DOCX Parsing | [python-docx](https://python-docx.readthedocs.io/) |
+| Numerics | [NumPy](https://numpy.org/) |
+
+---
+
+## Installation
+
+### Prerequisites
+
+- Python 3.10 or higher
+- `pip`
+
+### Steps
 
 ```bash
-cd catalyst-project
-```
+# 1. Clone or download the project
+git clone <your-repo-url>
+cd catalyst
 
-### 2. Create virtual environment
-
-```bash
+# 2. (Recommended) Create a virtual environment
 python -m venv venv
 source venv/bin/activate        # Windows: venv\Scripts\activate
-```
 
-### 3. Install dependencies
-
-```bash
+# 3. Install dependencies
 pip install -r requirements.txt
 ```
 
-> First run downloads the `all-MiniLM-L6-v2` embedding model (~80 MB). No signup required.
+> **Note:** On first run, the `all-MiniLM-L6-v2` embedding model (~80 MB) will be downloaded automatically from HuggingFace and cached locally.
 
-### 4. (Optional) HuggingFace API token
+---
 
-The agent works fully without a token (keyword extraction only). To enable LLM-powered skill extraction, add your **free** HF token:
+## Configuration
 
-```bash
-# Create .env file
-echo "HF_API_TOKEN=hf_your_token_here" > .env
+Catalyst works out of the box without any API key. However, adding a free HuggingFace token removes rate limits on the LLM skill extraction step.
+
+Create a `.env` file in the project root:
+
+```env
+HF_API_TOKEN=hf_your_token_here
 ```
 
-Get a free token at https://huggingface.co/settings/tokens
+Get a free token at [huggingface.co/settings/tokens](https://huggingface.co/settings/tokens).
 
-### 5. Run the app
+> Without a token, Catalyst gracefully falls back to keyword-only skill extraction — results are still accurate.
+
+---
+
+## Running the App
 
 ```bash
 streamlit run streamlit_app.py
 ```
 
-Open http://localhost:8501 in your browser.
+Then open [http://localhost:8501](http://localhost:8501) in your browser.
 
-### 6. Quick CLI test
+To run a quick CLI smoke-test instead:
 
 ```bash
 python catalyst_agent.py
@@ -132,94 +143,91 @@ python catalyst_agent.py
 
 ---
 
-## 💻 Usage
+## How It Works
 
-1. **Input Tab** — Paste your resume and the job description (sample data pre-filled)
-2. Click **⚡ Analyse Skills & Generate Roadmap**
-3. Switch to **Results Tab** — view:
-   - Overall match score
-   - Skill-by-skill breakdown with visual bars
-   - Strengths & gaps as colour-coded pills
-   - Full learning roadmap with free resources
-4. **Chat Tab** — ask follow-up questions (no API key needed)
-5. **Sidebar** — download full JSON report
+### Skill Extraction (Tool 2)
+Skills are extracted using two strategies in parallel:
+
+1. **Taxonomy matching** — a curated dictionary of 30+ skill categories with aliases (e.g. `"ml"`, `"sklearn"`, `"scikit-learn"` all map to `"machine learning"`) catches common skills reliably.
+2. **LLM extraction** — a Mistral-7B prompt extracts any skills not in the taxonomy. Results from both are merged and deduplicated, with taxonomy results taking priority.
+
+### Hybrid Scoring (Tool 4)
+Each JD skill is scored (0–100) using 4 independent signals:
+
+| Signal | Weight | Description |
+|---|---|---|
+| Semantic similarity | High | Cosine similarity of skill embedding vs. resume sentences |
+| Keyword presence | Medium | Exact/alias keyword match in resume |
+| Section boost | Medium | Bonus if skill found in key sections (Skills, Experience) |
+| Frequency | Low | How often the skill appears in the resume |
+
+The overall match score is a weighted average across all JD skills, with core skills weighted higher than nice-to-haves.
+
+### Candidate Levels
+Each skill is classified into one of three levels:
+
+- ✅ **Strong** — score ≥ 65
+- ⚠️ **Partial** — score 35–64
+- ❌ **Missing** — score < 35
+
+### Learning Roadmap (Tool 6)
+Gap skills are prioritised by:
+- Whether the skill is core (required) or nice-to-have
+- The severity of the gap (lower score = higher priority)
+
+Each skill in the roadmap includes:
+- Estimated learning hours (e.g. `20–60 hrs`)
+- A milestone description
+- 2–3 curated free resources (courses, docs, YouTube videos)
+
+Time estimates assume **10 hours/week** of study.
 
 ---
 
-## 🛠️ Tech Stack (100% Free)
+## Project Structure
 
-| Component | Technology | Cost |
-|-----------|-----------|------|
-| Embeddings | `sentence-transformers/all-MiniLM-L6-v2` | Free / local |
-| LLM skill extraction | HuggingFace Inference API (Mistral-7B) | Free tier |
-| Similarity | `sklearn.metrics.pairwise.cosine_similarity` | Free |
-| UI | Streamlit | Free / open-source |
-| Resources | Curated free links (YouTube, Coursera audit, freeCodeCamp, etc.) | Free |
-
----
-
-## 🔥 Key Features
-
-- **Dual skill extraction**: taxonomy keyword matching + LLM (best of both)
-- **Embedding cache**: avoids redundant computation
-- **Graceful fallback**: works offline / without HF token (keyword mode)
-- **Session memory**: chat retains context across turns
-- **Download as JSON**: full structured output
-- **Responsive UI**: works on desktop and mobile browsers
-- **No paid API required**: 100% free to run
-
----
-
-## 📊 Sample Output (JSON)
-
-```json
-{
-  "overall_match_score": 62.4,
-  "strengths": ["python", "javascript", "react", "git"],
-  "gaps": ["docker", "aws", "node.js", "kubernetes"],
-  "estimated_weeks": 14,
-  "skill_scores": [
-    {
-      "skill": "python",
-      "required_level": "core",
-      "candidate_level": "strong",
-      "score": 88.2,
-      "explanation": "Candidate demonstrates solid python knowledge (score 88/100)."
-    }
-  ],
-  "learning_roadmap": [
-    {
-      "skill": "docker",
-      "priority": "high",
-      "estimated_hours": [20, 60],
-      "milestone": "Complete a beginner project using docker",
-      "resources": [
-        {
-          "title": "Docker Official Get Started",
-          "url": "https://docs.docker.com/get-started/",
-          "resource_type": "docs"
-        }
-      ]
-    }
-  ]
-}
+```
+catalyst/
+├── catalyst_agent.py     # Core agent: all 7 tools + data models
+├── streamlit_app.py      # Streamlit UI (Input, Results, Chat tabs)
+├── requirements.txt      # Python dependencies
+├── .env                  # (Optional) HF_API_TOKEN — not committed to git
+└── README.md
 ```
 
 ---
 
-## 🧩 Extending the Agent
+## Sample Output
 
-- **Add skills to taxonomy**: edit `SKILL_TAXONOMY` in `agent.py`
-- **Add resources**: edit `RESOURCE_LIBRARY` in `agent.py`
-- **Swap LLM**: change `HF_API_URL` to any free HuggingFace model
-- **Add FAISS**: uncomment `faiss-cpu` in `requirements.txt` and extend `EmbeddingEngine`
+```
+📊 Overall Match Score: 61/100
+
+✅ Strengths (4):
+   • python
+   • machine learning
+   • data analysis
+   • communication
+
+🔧 Skill Gaps (4):
+   • deep learning
+   • sql
+   • docker
+   • kubernetes
+
+🟡 Moderate fit — focused learning can bridge the gap.
+⏱  Estimated time to bridge gaps: ~19 weeks (at 10 hrs/week)
+```
 
 ---
 
-## 📄 License
+## Notes & Limitations
 
-MIT — free to use, modify, and distribute.
+- **HuggingFace free tier** can be slow or temporarily unavailable during high traffic periods. Catalyst automatically falls back to keyword-only extraction in these cases.
+- **Skill taxonomy coverage** is broad but not exhaustive. Highly niche or emerging skills not in the taxonomy will only be detected if the HuggingFace LLM extraction succeeds.
+- **Resume parsing quality** depends on the text content of the uploaded file. Scanned PDFs (image-only) cannot be parsed.
+- The **chat tab** uses rule-based responses — it does not make additional LLM calls, so responses are instant but limited to assessment-related topics.
+- FAISS vector search is listed in `requirements.txt` as a comment. Uncomment `faiss-cpu` to enable it if you need faster similarity search at scale.
 
 ---
 
-Built with ⚡ for the Catalyst Hackathon
+*Built for the Catalyst Hackathon. All tools used are free and open-source.*
