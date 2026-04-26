@@ -1,0 +1,23 @@
+# Catalyst — Skill Assessment & Learning Plan Agent
+# All packages are free/open-source
+
+# ── Core ML ──────────────────────────────────────────────────────────────
+sentence-transformers>=2.7.0     # Local semantic embeddings (all-MiniLM-L6-v2)
+scikit-learn>=1.4.0              # cosine_similarity + utilities
+numpy>=1.26.0                    # Array ops
+
+# ── HuggingFace (free inference API client) ───────────────────────────
+requests>=2.31.0                 # HTTP calls to HF Inference API
+
+# ── File Parsing ──────────────────────────────────────────────────────
+pypdf>=4.0.0                     # PDF text extraction
+python-docx>=1.1.0               # DOCX text extraction
+
+# ── UI ────────────────────────────────────────────────────────────────
+streamlit>=1.35.0                # Web interface
+
+# ── Utilities ────────────────────────────────────────────────────────
+python-dotenv>=1.0.0             # Load HF_API_TOKEN from .env (optional)
+
+# ── Optional: FAISS for vector search (comment out if install fails) ──
+# faiss-cpu>=1.8.0
