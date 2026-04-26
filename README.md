@@ -27,7 +27,7 @@
 
 ```
 catalyst-project/
-├── agent.py            ← Core agent (7 modular tools)
+├── catalyst_agent.py            ← Core agent (7 modular tools)
 ├── streamlit_app.py    ← UI layer
 ├── requirements.txt
 └── README.md
